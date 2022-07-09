@@ -1,0 +1,10 @@
+{
+    "applets": [
+        {
+            "name": "hello_world",
+            "path": "applets/hello_world.star",
+            "dynamic": false,
+            "refresh_interval_ms": 0
+        }
+    ]
+}
