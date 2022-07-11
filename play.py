@@ -1,16 +1,34 @@
-import numpy as np
 import time
+import sys
 
-if __name__ == "__main__":
-    old_frame = np.zeros([32, 64, 3], dtype=np.int16)
-    new_frame = np.ones([32, 64, 3], dtype=np.int16) * 255
+from rgbmatrix import RGBMatrix, RGBMatrixOptions
+from PIL import Image
 
-    start = time.time_ns()
-    mask = new_frame != old_frame
-    mask = np.any(mask, 2)
-    end = time.time_ns()
+# if len(sys.argv) < 2:
+#     sys.exit("Require an image argument")
+# else:
+#     image_file = sys.argv[1]
 
-    print("clock time: %d ns" % (end - start))
-    print(mask)
-    print("mask size: ", np.shape(mask))
+# image = Image.open(image_file)
 
+# Configuration for the matrix
+options = RGBMatrixOptions()
+options.rows = 32
+options.cols = 64
+options.chain_length = 1
+options.parallel = 1
+options.hardware_mapping = 'adafruit-hat'  # If you have an Adafruit HAT: 'adafruit-hat'
+
+matrix = RGBMatrix(options = options)
+
+# Make image fit our screen.
+# image.thumbnail((matrix.width, matrix.height), Image.ANTIALIAS)
+
+matrix.Fill(255, 0, 0)
+
+try:
+    print("Press CTRL-C to stop.")
+    while True:
+        time.sleep(100)
+except KeyboardInterrupt:
+    sys.exit(0)

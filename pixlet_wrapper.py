@@ -54,4 +54,5 @@ class PixletWrapper:
 
     def get_current_applet(self):
         # TODO: Add applet automation through config
+        # Just assume the first config is the active one for now.
         return self._applets[0]

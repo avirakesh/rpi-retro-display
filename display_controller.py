@@ -1,4 +1,3 @@
-from asyncore import loop
 from dataclasses import dataclass
 from PIL import Image
 import time
@@ -6,7 +5,7 @@ import numpy as np
 from multiprocessing import Process, Queue, Value
 from collections import deque
 import queue
-# from rgbmatrix import RGBMatrix, RGBMatrixOptions
+from rgbmatrix import RGBMatrix, RGBMatrixOptions
 
 _DISPLAY_SIZE = (32, 64, 3) # 32 rows, 64 columns, 3 colors for each pixel
 _DEFAULT_DISPLAY_TIME = 1 # default time to wait for next frame, in seconds
@@ -14,7 +13,7 @@ _MS_TO_S = 0.001
 
 @dataclass
 class Frame:
-    img: Image # Should be of size _DISPLAY_SIZE
+    img: np.ndarray # Should be of size _DISPLAY_SIZE; dtype = np.uint8
     duration: float = _DEFAULT_DISPLAY_TIME # time (in s) how long the frame should be on display.
                                             # 0 for infinite
     should_loop: bool  = False # true if the frames should loop
@@ -38,6 +37,28 @@ class DisplayController:
         # One scene consists of a list of Frames to display.
         self._scene_queue = scene_queue
 
+
+    def run(self):
+        print("Running DisplayController process.")
+
+        self._setup_rgb_matrix()
+
+        while(self._should_exit.value == 0):
+            self._process_frame()
+
+
+    def _setup_rgb_matrix(self):
+        options = RGBMatrixOptions()
+        options.rows = 32
+        options.cols = 64
+        options.chain_length = 1
+        options.parallel = 1
+        options.hardware_mapping = 'adafruit-hat'
+        options.led_rgb_sequence = "RBG"
+
+        self._rgb_matrix = RGBMatrix(options=options)
+
+
         # Queue of Frames that need to be drawn.
         # The first frame is the frame currently on screen.
         self._frames_queue = deque()
@@ -46,31 +67,18 @@ class DisplayController:
         # this forces the black frame to be drawn immediately upon start
 
         white_frame_raw = np.ones(shape=_DISPLAY_SIZE, dtype=np.uint8) * 255
-        white_img = Image.fromarray(white_frame_raw, mode="RGB")
+        # white_img = Image.fromarray(white_frame_raw, mode="RGB")
         # Pretend this frame has already expired
         white_frame_drawn_at = time.perf_counter() - (2*_DEFAULT_DISPLAY_TIME)
-        white_frame = Frame(img=white_img, drawn_at=white_frame_drawn_at)
+        white_frame = Frame(img=white_frame_raw, drawn_at=white_frame_drawn_at)
 
         black_frame_raw = np.zeros(shape=_DISPLAY_SIZE, dtype=np.uint8)
-        black_img = Image.fromarray(black_frame_raw, mode="RGB")
-        black_frame = Frame(img=black_img)
+        # black_img = Image.fromarray(black_frame_raw, mode="RGB")
+        black_frame = Frame(img=black_frame_raw)
 
         self._frames_queue.append(white_frame)
         self._frames_queue.append(black_frame)
 
-        # display_options = RGBMatrixOptions()
-        # display_options.rows = _DISPLAY_SIZE[0]
-        # display_options.cols = _DISPLAY_SIZE[1]
-        # display_options.parallel = 1
-        # display_options.hardware_mapping = "adafruit-hal"
-
-        # self._rgb_matrix = RGBMatrix(options=display_options)
-
-
-    def run(self):
-        print("Running DisplayController process.")
-        while(self._should_exit.value == 0):
-            self._process_frame()
 
 
     def _process_frame(self):
@@ -91,7 +99,7 @@ class DisplayController:
             # indefinitely and negative wait is undefined.
             # Wait at least 1ms instead.
             timeout = max(0.001, curr_expiry - time.perf_counter())
-            scene = self._scene_queue.get(block=True, timeout=timeout)
+            scene = self._scene_queue.get(block=False)
             # print("Received new scene")
             self._queue_raw_frames(scene)
             self._draw_next_frame()
@@ -99,13 +107,20 @@ class DisplayController:
             # print("Empty raw frames queue, do nothing.")
             pass
 
+        curr_frame = self._frames_queue[0]
+        if curr_frame.should_loop:
+            time.sleep(curr_frame.duration)
+        else:
+            time.sleep(_DEFAULT_DISPLAY_TIME)
+
 
     def _queue_raw_frames(self, scene):
         temp_frames = deque()
 
         for frame in scene:
-            if frame.img.size != (_DISPLAY_SIZE[0], _DISPLAY_SIZE[1]):
-                # print("Invalid frame shape. Skipping")
+            if np.shape(frame.img) != _DISPLAY_SIZE:
+                print("Invalid frame shape. Skipping")
+                print("Expected:",_DISPLAY_SIZE, "Received:", np.shape(frame.img))
                 continue
 
             frame.drawn_at = 0.0
@@ -129,7 +144,8 @@ class DisplayController:
     def _draw_next_frame(self):
         if len(self._frames_queue) == 1:
             # print("Last frame in queue, redrawing last frame")
-            self._draw_frame(new_frame=self._frames_queue[0])
+            # self._draw_frame(new_frame=self._frames_queue[0])
+            self._frames_queue[0].drawn_at = time.perf_counter()
             return
 
         curr_frame = self._frames_queue[0]
@@ -140,7 +156,7 @@ class DisplayController:
             return
 
         curr_frame = self._frames_queue.popleft()
-        self._draw_frame(new_frame=self._frames_queue[0])
+        self._draw_frame(new_frame=self._frames_queue[0], old_frame=curr_frame)
 
         if not curr_frame.should_loop:
             return
@@ -156,15 +172,28 @@ class DisplayController:
         self._frames_queue.append(curr_frame)
 
 
-    def _draw_frame(self, new_frame):
+    def _draw_frame(self, new_frame, old_frame):
         # print("Drawing Frame", new_frame)
-        # Logic to draw a frame
-        # ...
-        # ...
-        # self._rgb_matrix.SetImage(new_frame.img)
+
+        # diff the previous and the new frame
+        mask = new_frame.img != old_frame.img
+        mask = np.any(mask, axis=2)
+        # coordinates of the pixels that differ
+        coords_arr = np.transpose(np.nonzero(mask))
+        # if there is a difference, apply the diff to the display
+        if np.shape(coords_arr)[0] != 0:
+            np.apply_along_axis(DisplayController._draw_pixel, 1, coords_arr, self, new_frame.img)
+
 
         # Update new frame's metadata
         new_frame.drawn_at = time.perf_counter()
+
+
+    def _draw_pixel(coords, self, img):
+        x = coords[1]
+        y = coords[0]
+        pixel_vals = img[y][x]
+        self._rgb_matrix.SetPixel(x, y, pixel_vals[0], pixel_vals[1], pixel_vals[2])
 
 
 
@@ -210,8 +239,9 @@ class DisplayControllerDelegator:
                     frame_number += 1
 
                     rgb_img = im.convert("RGB")
+                    np_img = np.array(rgb_img, dtype=np.uint8)
 
-                    frame = Frame(img=rgb_img)
+                    frame = Frame(img=np_img)
                     if should_loop:
                         frame.should_loop = should_loop
                         frame.duration = frame_duration
