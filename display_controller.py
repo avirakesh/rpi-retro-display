@@ -15,10 +15,9 @@ _MS_TO_S = 0.001
 class Frame:
     img: np.ndarray # Should be of size _DISPLAY_SIZE; dtype = np.uint8
     duration: float = _DEFAULT_DISPLAY_TIME # time (in s) how long the frame should be on display.
-                                            # 0 for infinite
     should_loop: bool  = False # true if the frames should loop
     loop_count: int = 0 # number of times the frames should loop
-
+                        # 0 for infinite
     drawn_at: float = 0.0 # used and filled by DisplayController.
                           # Time (in s) at which the frame was drawn
 
@@ -41,13 +40,14 @@ class DisplayController:
     def run(self):
         print("Running DisplayController process.")
 
-        self._setup_rgb_matrix()
+        self._init_process()
 
         while(self._should_exit.value == 0):
             self._process_frame()
 
 
-    def _setup_rgb_matrix(self):
+    def _init_process(self):
+        # Set up RGB Matrix
         options = RGBMatrixOptions()
         options.rows = 32
         options.cols = 64
@@ -65,15 +65,12 @@ class DisplayController:
 
         # seed frames queue with white frame followed by a black frame
         # this forces the black frame to be drawn immediately upon start
-
         white_frame_raw = np.ones(shape=_DISPLAY_SIZE, dtype=np.uint8) * 255
-        # white_img = Image.fromarray(white_frame_raw, mode="RGB")
         # Pretend this frame has already expired
         white_frame_drawn_at = time.perf_counter() - (2*_DEFAULT_DISPLAY_TIME)
         white_frame = Frame(img=white_frame_raw, drawn_at=white_frame_drawn_at)
 
         black_frame_raw = np.zeros(shape=_DISPLAY_SIZE, dtype=np.uint8)
-        # black_img = Image.fromarray(black_frame_raw, mode="RGB")
         black_frame = Frame(img=black_frame_raw)
 
         self._frames_queue.append(white_frame)
@@ -144,7 +141,6 @@ class DisplayController:
     def _draw_next_frame(self):
         if len(self._frames_queue) == 1:
             # print("Last frame in queue, redrawing last frame")
-            # self._draw_frame(new_frame=self._frames_queue[0])
             self._frames_queue[0].drawn_at = time.perf_counter()
             return
 
@@ -241,11 +237,10 @@ class DisplayControllerDelegator:
                     rgb_img = im.convert("RGB")
                     np_img = np.array(rgb_img, dtype=np.uint8)
 
-                    frame = Frame(img=np_img)
-                    if should_loop:
-                        frame.should_loop = should_loop
-                        frame.duration = frame_duration
-                        frame.loop_count = loop_count
+                    frame = Frame(img=np_img,
+                                  should_loop=should_loop,
+                                  duration=frame_duration,
+                                  loop_count=loop_count)
 
                     frames.append(frame)
 
