@@ -6,7 +6,6 @@
 ###############################################################################
 
 import subprocess
-import time
 import json
 
 _OUTPUT_DIR = "gifs"

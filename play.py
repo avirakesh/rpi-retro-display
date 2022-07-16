@@ -9,14 +9,8 @@ import time
 import sys
 
 from rgbmatrix import RGBMatrix, RGBMatrixOptions
-from PIL import Image
 
-# if len(sys.argv) < 2:
-#     sys.exit("Require an image argument")
-# else:
-#     image_file = sys.argv[1]
-
-# image = Image.open(image_file)
+## Simple script to check if the diplay is working or not.
 
 # Configuration for the matrix
 options = RGBMatrixOptions()
@@ -27,9 +21,6 @@ options.parallel = 1
 options.hardware_mapping = 'adafruit-hat'  # If you have an Adafruit HAT: 'adafruit-hat'
 
 matrix = RGBMatrix(options = options)
-
-# Make image fit our screen.
-# image.thumbnail((matrix.width, matrix.height), Image.ANTIALIAS)
 
 matrix.Fill(255, 0, 0)
 
