@@ -204,6 +204,7 @@ class DisplayControllerDelegator:
     def __init__(self):
         self._should_exit = Value('b', 0, lock=False)
         self._scene_queue = Queue()
+        self._current_gif_hash = None
 
         self._display_controller = DisplayController(self._should_exit, self._scene_queue)
 
@@ -219,7 +220,13 @@ class DisplayControllerDelegator:
         self._frame_writer_process.join()
         self._scene_queue.close()
 
-    def queue_gif_to_display(self, gif_filepath):
+    def queue_gif_to_display(self, gif_filepath, gif_hash):
+        if self._current_gif_hash is not None and self._current_gif_hash == gif_hash:
+            # The new gif has the same hash as what is already displayed.
+            # No need to queue this gif
+            return
+
+
         frames = []
         with Image.open(gif_filepath) as im:
             im_info = im.info
@@ -256,3 +263,4 @@ class DisplayControllerDelegator:
                 pass
 
         self._scene_queue.put(frames)
+        self._current_gif_hash = gif_hash

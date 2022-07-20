@@ -82,11 +82,10 @@ def _get_wake_up_time(curr_applet, curr_applet_render_time, next_applet_day_time
     curr_day_time = PixletWrapper.get_day_time_secs()
 
     # figure out time after which the applet should be updated
-    time_to_next_applet = 0
     if next_applet_day_time is None:
         # No next applet, default to an hour
         time_to_next_applet = _SECS_IN_AN_HOUR
-    if curr_day_time > next_applet_day_time:
+    elif curr_day_time > next_applet_day_time:
         # next_applet_time is the next day
         # Wait all of today + until next applet has to come up
         time_to_next_applet = (_SECS_IN_A_DAY - curr_day_time) + next_applet_day_time
@@ -94,11 +93,7 @@ def _get_wake_up_time(curr_applet, curr_applet_render_time, next_applet_day_time
         # next_applet_time is on the same day
         time_to_next_applet = next_applet_day_time - curr_day_time
 
-    next_app_time = curr_time + time_to_next_applet
 
-
-
-    time_to_update_curr = 0
     if not curr_applet["dynamic"]:
         # Static applet, default to an hour
         time_to_curr_applet = _SECS_IN_AN_HOUR
@@ -124,9 +119,9 @@ def _render_applet_if_needed(pixlet_wrapper, display_controller, applet, curr_re
         # return early if the applet has not expired yet
         return curr_render_time
 
-    gif_path = pixlet_wrapper.create_gif_from_sketch(applet["path"])
+    (gif_path, gif_hash) = pixlet_wrapper.create_gif_from_sketch(applet["path"])
     if gif_path is not None:
-        display_controller.queue_gif_to_display(gif_path)
+        display_controller.queue_gif_to_display(gif_path, gif_hash)
     else:
         print(f"Error creating gif for '{applet['name']}'")
         # didn't render, don't update render time
