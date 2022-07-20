@@ -185,7 +185,7 @@ A quick and dirty guide to mounting and using a ramdisk with the script follows:
     **Note:** [tmpfs](https://en.wikipedia.org/wiki/Tmpfs) will use swap space if your device
     runs out of memory, which defeats the purpose of us creating a ramdisk, so make sure your
     Raspberry Pi has consistent 25MB free when under load. If you know your applets don't create
-    large gifs, the tmpfs can be reduced.
+    large gifs, the tmpfs size can be reduced.
 
 4. Check if mouting was successful
     ```console
@@ -210,7 +210,7 @@ A quick and dirty guide to mounting and using a ramdisk with the script follows:
 6. And voila! SD Card saved!
 
     Note that you will have to remount the ramdisk if the Raspberry Pi reboots and all information
-    in the ramdisk will be lost. How to automate mounting on boot is left as an excercise for the
+    in the ramdisk will be lost. How to automate mounting on boot is left as an exercise for the
     reader.
 
 
