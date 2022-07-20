@@ -29,13 +29,29 @@ _Make sure you can run the python samples from the tutorial before proceeding._
 
 ### 2. Setting Up Raspberry Pi
 
-0. Install Python 3
-    ```console
-    $ python --version
-    Python 3.9.2
-    ```
+0. Install Pre-requisites
+    There are two main pre-requisites for the project
+    - Python
+        ```console
+        $ python --version
+        Python 3.9.2
+        ```
 
-    Python versions >= 3.9 should work!
+        Python versions >= 3.9 should work!
+    - `md5sum`
+        ```console
+        $ md5sum --version
+        md5sum (GNU coreutils) 8.32
+        Copyright (C) 2020 Free Software Foundation, Inc.
+        License GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>.
+        This is free software: you are free to change and redistribute it.
+        There is NO WARRANTY, to the extent permitted by law.
+
+        Written by Ulrich Drepper, Scott Miller, and David Madore.
+        ```
+
+    They should both be bundled by default with Raspbian. In case they are not, make sure they are
+    both installed and their binaries present in `PATH`.
 
 1. Install [pixlet](https://github.com/tidbyt/pixlet)
 
