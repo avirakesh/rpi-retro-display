@@ -8,3 +8,4 @@
 -i https://pypi.org/simple
 numpy==1.23.1
 pillow==9.2.0
+sortedcontainers==2.4.0

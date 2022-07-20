@@ -1,10 +1,18 @@
 {
     "applets": [
         {
+            "name": "clock",
+            "path": "applets/clock.star",
+            "dynamic": true,
+            "refresh_interval_ms": 1500,
+            "start_time": "07:00"
+        },
+        {
             "name": "hello_world",
             "path": "applets/hello_world.star",
             "dynamic": false,
-            "refresh_interval_ms": 0
+            "refresh_interval_ms": 0,
+            "start_time": "22:00"
         }
     ]
 }
