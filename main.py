@@ -7,9 +7,9 @@
 
 import time
 
+from display_controller import DisplayControllerDelegator
 from numpy import exp
 from pixlet_wrapper import PixletWrapper
-from display_controller import DisplayControllerDelegator
 
 _SECS_IN_AN_HOUR = 60 * 60
 _SECS_IN_A_DAY = 24 * _SECS_IN_AN_HOUR

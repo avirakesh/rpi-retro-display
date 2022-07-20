@@ -5,14 +5,14 @@
 # this stuff is worth it, you can buy me a beer in return. Avichal Rakesh
 ###############################################################################
 
-from dataclasses import dataclass
-from PIL import Image
-import time
-import numpy as np
-from multiprocessing import Process, Queue, Value
 from collections import deque
-import queue
+from dataclasses import dataclass
+from multiprocessing import Process, Queue, Value
+from PIL import Image
 from rgbmatrix import RGBMatrix, RGBMatrixOptions
+import numpy as np
+import queue
+import time
 
 _DISPLAY_SIZE = (32, 64, 3) # 32 rows, 64 columns, 3 colors for each pixel
 _DEFAULT_DISPLAY_TIME = 1 # default time to wait for next frame, in seconds

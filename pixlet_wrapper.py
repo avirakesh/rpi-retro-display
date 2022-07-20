@@ -5,11 +5,11 @@
 # this stuff is worth it, you can buy me a beer in return. Avichal Rakesh
 ###############################################################################
 
-import subprocess
+from sortedcontainers import SortedDict
 import json
 import re
+import subprocess
 import time
-from sortedcontainers import SortedDict
 
 _OUTPUT_DIR = "gifs"
 _TIME_REGEX = r"(\d\d):(\d\d)" # pattern for hh:mm
