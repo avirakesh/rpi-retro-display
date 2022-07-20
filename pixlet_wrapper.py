@@ -11,7 +11,8 @@ import re
 import subprocess
 import time
 
-_OUTPUT_DIR = "gifs"
+_OUTPUT_ROOT = "" # path where the output gifs should be placed. Should end with "/"
+_OUTPUT_DIR = _OUTPUT_ROOT + "gifs"
 _TIME_REGEX = r"(\d\d):(\d\d)" # pattern for hh:mm
 
 
