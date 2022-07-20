@@ -83,8 +83,10 @@ Defaults        secure_path="....:/dir/containing/pixlet"
 With that, run the script with:
 
 ```console
-$ sudo python main.py
+$ sudo -E python main.py
 ```
+
+The `-E` flag is needed for sudo to pick up all python modules available in the current environment.
 
 You should see something like
 
@@ -114,13 +116,17 @@ directory, and update [`config.json`](./config.json) to point to the applet.
             "name": "display name of applet",
             "path": "applets/my_applet.star",
             "dynamic": false, // 'true' if the applet should be called periodically to be
-                                // re-rendered. Ex: the clock applet needs to be
-                                // updated every minute
-            "refresh_interval_ms": 0 // in milliseconds.
-                                        // Interval at which the applet should be re-rendered.
-                                        // Ignored if dynamic = false.
-                                        // This interval is not very precise, so err on the side of
-                                        // more frequent rendering
+                              // re-rendered. Ex: the clock applet needs to be
+                              // updated every minute
+            "refresh_interval_ms": 0, // in milliseconds.
+                                      // Interval at which the applet should be re-rendered.
+                                      // Ignored if dynamic = false.
+                                      // This interval is not very precise, so err on the side of
+                                      // more frequent rendering. The display will only update as
+                                      // needed.
+            "start_time": "15:00" // time of day at which the applet should be enabled
+                                  // two applets should not start at the same time
+                                  // should be a valid 24 hour time
         },
         {
             ...
@@ -129,8 +135,69 @@ directory, and update [`config.json`](./config.json) to point to the applet.
 }
 ```
 
-**NOTE:** The script will only use the first applet in [`config.json`](./config.json) for now.
-The plan is to allow some basic automation in the future.
+The script supports basic time based automation. The `start_time` attribute of each applet will be
+honored if multiple applets are present.
+
+### 5. [Optional] Extend life expectancy of your SD Card
+
+SD Cards have limited read/write cycles and are prone to corruption if the power goes out while
+being written to.
+
+To update the display, this script calls the `pixlet` binary which writes a GIF file to the file
+system. Depending on your [`config.json`](./config.json), this might happen multiple times a second
+which can significantly reduce the SD Card's lifespan.
+
+A simple solution is to mount a [RAM Disk](https://en.wikipedia.org/wiki/RAM_drive) which treats
+your RAM as a disk drive.
+
+A quick and dirty guide to mounting and using a ramdisk with the script follows:
+1. Create a mount point for the ramdisk. I am using `/tmp/ramdisk`
+    ```console
+    $ sudo mkdir /tmp/ramdisk
+    ```
+
+2. Add correct permissions to the mount point
+    ```console
+    $ sudo chmod 777 /tmp/ramdisk
+    ```
+
+3. Mount ramdisk at the mount point
+    ```console
+    $ sudo mount -t tmpfs -o size=25m myramdisk /tmp/ramdisk
+    ```
+
+    **Note:** [tmpfs](https://en.wikipedia.org/wiki/Tmpfs) will use swap space if your device
+    runs out of memory, which defeats the purpose of us creating a ramdisk, so make sure your
+    Raspberry Pi has consistent 25MB free when under load. If you know your applets don't create
+    large gifs, the tmpfs can be reduced.
+
+4. Check if mouting was successful
+    ```console
+    $ mount | grep myramdisk
+    ```
+
+    You should see an output like:
+    ```console
+    $ ramdisk mount | grep myramdisk
+    myramdisk on /tmp/ramdisk type tmpfs (rw,relatime,size=25600k)
+    ```
+
+5. Update the script to write files to ramdisk
+
+    Open [`pixlet_wrapper.py`](./pixlet_wrapper.py) and set `_OUTPUT_ROOT` to `"/tmp/ramdisk/"`.
+    The line should look like:
+    ```python
+    _OUTPUT_ROOT = "/tmp/ramdisk/" # update this line
+    _OUTPUT_DIR = _OUTPUT_ROOT + "gifs" # don't need to change this line
+    ```
+
+6. And voila! SD Card saved!
+
+    Note that you will have to remount the ramdisk if the Raspberry Pi reboots and all information
+    in the ramdisk will be lost. How to automate mounting on boot is left as an excercise for the
+    reader.
+
+
 
 ## License
 ```
