@@ -15,7 +15,7 @@ a TidByt&copy; clone.
 **NOTE:** I used Raspberry Pi 3B for the project. Raspberry Pi 4 is probably safe to use, but
 YMMV with other models.
 
-### 1. Setting up the Display
+### 1. Set up Display
 
 I used an [Adafruit Display](https://www.adafruit.com/product/5036) with an
 [Adafruit's RPi HAT](https://www.adafruit.com/product/2345)
@@ -27,7 +27,7 @@ that installs a python library to control the display. The tutorial installs pyt
 
 _Make sure you can run the python samples from the tutorial before proceeding._
 
-### 2. Setting Up Raspberry Pi
+### 2. Set Up Raspberry Pi
 
 0. Install Pre-requisites
     There are two main pre-requisites for the project
@@ -76,7 +76,7 @@ _Make sure you can run the python samples from the tutorial before proceeding._
     $ pip3 install -r requirements.txt
     ```
 
-### 3. Running the script
+### 3. Run the Script
 
 Go to this repo's directory, and run the script with
 ```console
@@ -115,7 +115,7 @@ permission for `Other`:
 $ chmod o+w /path/to/project
 ```
 
-### 4. Configure Display
+### 4. Configure Applets
 
 The script _should_ be capable of rendering all outputs from `pixlet` so feel free to drop in
 any applet you want.
@@ -154,7 +154,7 @@ directory, and update [`config.json`](./config.json) to point to the applet.
 The script supports basic time based automation. The `start_time` attribute of each applet will be
 honored if multiple applets are present.
 
-### 5. [Optional] Extend life expectancy of your SD Card
+### 5. [Optional] Extend Life Expectancy of the SD Card
 
 SD Cards have limited read/write cycles and are prone to corruption if the power goes out while
 being written to.
