@@ -112,10 +112,14 @@ class DisplayController:
             pass
 
         curr_frame = self._frames_queue[0]
-        if curr_frame.should_loop:
-            time.sleep(curr_frame.duration)
-        else:
+        if len(self._frames_queue) == 1:
+            # last frame in the queue
+            # we can reduce the refresh rate
             time.sleep(_DEFAULT_DISPLAY_TIME)
+        else:
+            # Other frames in queue. Wait for as long as the
+            # current frame lasts
+            time.sleep(curr_frame.duration)
 
 
     def _queue_raw_frames(self, scene):
