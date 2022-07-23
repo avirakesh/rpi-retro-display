@@ -98,6 +98,7 @@ def _get_wake_up_time(curr_applet, curr_applet_render_time, next_applet_day_time
         # Static applet, default to an hour
         time_to_curr_applet = _SECS_IN_AN_HOUR
     else:
+        curr_applet_render_time = curr_time if curr_applet_render_time is None else curr_applet_render_time
         curr_applet_expiry = curr_applet_render_time + (curr_applet["refresh_interval_ms"] * _MS_TO_S)
         time_to_curr_applet = curr_applet_expiry - curr_time
 
