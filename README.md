@@ -146,6 +146,7 @@ directory, and update [`config.json`](./config.json) to point to the applet.
             "brightness": 0.25 // Float. Optional. Default = 1. Brightness of the display.
                                // Applies a multiplier to the output of pixlet binary.
                                // Value ideally between 0 and 1, both inclusive, but you do you!
+                               // Negative brightness will clamp to 0
 
         },
         {
@@ -159,9 +160,10 @@ The script supports basic time based automation. The `start_time` attribute of e
 honored if multiple applets are present.
 
 __A Note on `brightness`:__ The `brightness` attribute is intended to dim the display output without
-fiddling with the `*.star` file. It just applies a multiplier to the output of `pixlet`. Technically
-values higher that 1 are allowed, but not recommended as the output will be saturate very quickly.
-Tinker with the `brightness` value and see what works for you!
+fiddling with the `*.star` files. It just applies a multiplier to the output of `pixlet`.
+`brightness = 0` will blank out the display, and `brightness = 1` will leave the output of `pixlet`
+untouched. Technically values higher that 1 are allowed, but not recommended as the output will
+saturate very quickly. Tinker with the `brightness` value and see what works for you!
 
 ### 5. [Optional] Extend Life Expectancy of the SD Card
 

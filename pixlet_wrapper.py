@@ -5,6 +5,7 @@
 # this stuff is worth it, you can buy me a beer in return. Avichal Rakesh
 ###############################################################################
 
+import math
 from sortedcontainers import SortedDict
 import json
 import re
@@ -141,9 +142,12 @@ class PixletWrapper:
         self._applets = SortedDict(PixletWrapper.identity_fn)
 
         for start_time_str, applet in start_time_to_applet.items():
+            applet["brightness"] = applet["brightness"] if "brightness" in applet else 1
+            applet["brightness"] = max(applet["brightness"], 0.0)
+
             start_time = PixletWrapper._parse_and_assert_time(start_time_str)
             applet["start_time"] = start_time
-            applet["brightness"] = applet["brightness"] if "brightness" in applet else 1
+
             self._applets[start_time] = applet
 
 
