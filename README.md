@@ -140,9 +140,13 @@ directory, and update [`config.json`](./config.json) to point to the applet.
                                       // This interval is not very precise, so err on the side of
                                       // more frequent rendering. The display will only update as
                                       // needed.
-            "start_time": "15:00" // time of day at which the applet should be enabled
-                                  // two applets should not start at the same time
-                                  // should be a valid 24 hour time
+            "start_time": "15:00", // time of day at which the applet should be enabled
+                                   // two applets should not start at the same time
+                                   // should be a valid 24 hour time
+            "brightness": 0.25 // Float. Optional. Default = 1. Brightness of the display.
+                               // Applies a multiplier to the output of pixlet binary.
+                               // Value ideally between 0 and 1, both inclusive, but you do you!
+
         },
         {
             ...
@@ -153,6 +157,11 @@ directory, and update [`config.json`](./config.json) to point to the applet.
 
 The script supports basic time based automation. The `start_time` attribute of each applet will be
 honored if multiple applets are present.
+
+__A Note on `brightness`:__ The `brightness` attribute is intended to dim the display output without
+fiddling with the `*.star` file. It just applies a multiplier to the output of `pixlet`. Technically
+values higher that 1 are allowed, but not recommended as the output will be saturate very quickly.
+Tinker with the `brightness` value and see what works for you!
 
 ### 5. [Optional] Extend Life Expectancy of the SD Card
 
