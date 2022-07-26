@@ -8,7 +8,7 @@
 from collections import deque
 from dataclasses import dataclass
 from multiprocessing import Process, Queue, Value
-from PIL import Image
+from PIL import Image, ImageEnhance
 from rgbmatrix import RGBMatrix, RGBMatrixOptions
 import numpy as np
 import queue
@@ -208,6 +208,10 @@ class DisplayControllerDelegator:
     def __init__(self):
         self._should_exit = Value('b', 0, lock=False)
         self._scene_queue = Queue()
+        self._current_scene_metadata = {
+            "hash": None,
+            "brightness": None
+        }
         self._current_gif_hash = None
 
         self._display_controller = DisplayController(self._should_exit, self._scene_queue)
@@ -224,8 +228,8 @@ class DisplayControllerDelegator:
         self._frame_writer_process.join()
         self._scene_queue.close()
 
-    def queue_gif_to_display(self, gif_filepath, gif_hash):
-        if self._current_gif_hash is not None and self._current_gif_hash == gif_hash:
+    def queue_gif_to_display(self, gif_filepath, gif_hash, brightness):
+        if not self._update_scene_metadata_if_needed(gif_hash, brightness):
             # The new gif has the same hash as what is already displayed.
             # No need to queue this gif
             return
@@ -252,7 +256,14 @@ class DisplayControllerDelegator:
                     im.seek(frame_number)
                     frame_number += 1
 
-                    rgb_img = im.convert("RGB")
+                    if brightness != 1:
+                        # temporary format to allow brightness changes
+                        tmp_im = im.convert("RGBA")
+                        img = ImageEnhance.Brightness(tmp_im).enhance(brightness)
+                    else:
+                        img = im
+
+                    rgb_img = img.convert("RGB")
                     np_img = np.array(rgb_img, dtype=np.uint8)
 
                     frame = Frame(img=np_img,
@@ -268,3 +279,18 @@ class DisplayControllerDelegator:
 
         self._scene_queue.put(frames)
         self._current_gif_hash = gif_hash
+
+    # returns True if metadata was updated, False instead
+    def _update_scene_metadata_if_needed(self, gif_hash, brightness):
+        curr_hash = self._current_scene_metadata["hash"]
+        curr_brightness = self._current_scene_metadata["brightness"]
+
+        self._current_scene_metadata["hash"] = gif_hash
+        self._current_scene_metadata["brightness"] = brightness
+
+        # return true if the current hash is None (can't detect if old and new gifs are same)
+        #             or if the hash has changed
+        #             or if the brightness has changed
+        return curr_hash is None \
+                or curr_hash != gif_hash \
+                    or curr_brightness != brightness

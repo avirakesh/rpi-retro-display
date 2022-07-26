@@ -143,6 +143,7 @@ class PixletWrapper:
         for start_time_str, applet in start_time_to_applet.items():
             start_time = PixletWrapper._parse_and_assert_time(start_time_str)
             applet["start_time"] = start_time
+            applet["brightness"] = applet["brightness"] if "brightness" in applet else 1
             self._applets[start_time] = applet
 
 

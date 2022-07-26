@@ -122,7 +122,7 @@ def _render_applet_if_needed(pixlet_wrapper, display_controller, applet, curr_re
 
     (gif_path, gif_hash) = pixlet_wrapper.create_gif_from_sketch(applet["path"])
     if gif_path is not None:
-        display_controller.queue_gif_to_display(gif_path, gif_hash)
+        display_controller.queue_gif_to_display(gif_path, gif_hash, applet["brightness"])
     else:
         print(f"Error creating gif for '{applet['name']}'")
         # didn't render, don't update render time
