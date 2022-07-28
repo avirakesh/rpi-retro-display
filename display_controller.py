@@ -99,27 +99,24 @@ class DisplayController:
             # Wait for next scene to come in for as long
             # as the current frame lasts.
 
-            # We don't want timeout to be negative or 0 as 0 blocks
-            # indefinitely and negative wait is undefined.
+            # drop the refresh rate if there is only one frame to display
+            curr_frame_duration = _DEFAULT_DISPLAY_TIME \
+                                    if len(self._frames_queue) == 1 \
+                                        else curr_frame.duration
+            curr_expiry = curr_frame.drawn_at + curr_frame_duration
+
+            # We don't want timeout to be negative or 0.
+            # 0 blocks indefinitely, negative wait is undefined.
             # Wait at least 1ms instead.
             timeout = max(0.001, curr_expiry - time.perf_counter())
-            scene = self._scene_queue.get(block=False)
+
+            scene = self._scene_queue.get(block=True, timeout=timeout)
             # print("Received new scene")
             self._queue_raw_frames(scene)
             self._draw_next_frame()
         except queue.Empty:
             # print("Empty raw frames queue, do nothing.")
             pass
-
-        curr_frame = self._frames_queue[0]
-        if len(self._frames_queue) == 1:
-            # last frame in the queue
-            # we can reduce the refresh rate
-            time.sleep(_DEFAULT_DISPLAY_TIME)
-        else:
-            # Other frames in queue. Wait for as long as the
-            # current frame lasts
-            time.sleep(curr_frame.duration)
 
 
     def _queue_raw_frames(self, scene):
@@ -212,7 +209,6 @@ class DisplayControllerDelegator:
             "hash": None,
             "brightness": None
         }
-        self._current_gif_hash = None
 
         self._display_controller = DisplayController(self._should_exit, self._scene_queue)
 
@@ -230,7 +226,7 @@ class DisplayControllerDelegator:
 
     def queue_gif_to_display(self, gif_filepath, gif_hash, brightness):
         if not self._update_scene_metadata_if_needed(gif_hash, brightness):
-            # The new gif has the same hash as what is already displayed.
+            # The new gif has the same metadata as what is already displayed.
             # No need to queue this gif
             return
 
@@ -278,7 +274,6 @@ class DisplayControllerDelegator:
                 pass
 
         self._scene_queue.put(frames)
-        self._current_gif_hash = gif_hash
 
     # returns True if metadata was updated, False instead
     def _update_scene_metadata_if_needed(self, gif_hash, brightness):
