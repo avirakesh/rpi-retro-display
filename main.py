@@ -120,7 +120,7 @@ def _render_applet_if_needed(pixlet_wrapper, display_controller, applet, curr_re
         # return early if the applet has not expired yet
         return curr_render_time
 
-    (gif_path, gif_hash) = pixlet_wrapper.create_gif_from_sketch(applet["path"])
+    (gif_path, gif_hash) = pixlet_wrapper.create_gif_from_sketch(applet)
     if gif_path is not None:
         display_controller.queue_gif_to_display(gif_path, gif_hash, applet["brightness"])
     else:

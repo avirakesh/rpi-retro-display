@@ -56,7 +56,8 @@ class PixletWrapper:
 
 
     # returns (path_to_gif, md5 checksum of gif)
-    def create_gif_from_sketch(self, applet_path):
+    def create_gif_from_sketch(self, applet):
+        applet_path = applet["path"]
         applet_name = applet_path.split("/")[-1]
         applet_name = applet_name.split(".")[0]
 
@@ -68,7 +69,9 @@ class PixletWrapper:
             print("Failed to remove previous gif:", output_path)
             return (None, None)
 
-        pixlet_out = subprocess.run(["pixlet", "render", "--gif", "--output", output_path, applet_path])
+        cmd = ["pixlet", "render", "--gif", "--output", output_path, applet_path]
+        cmd.extend(applet["cmd_args"])
+        pixlet_out = subprocess.run(cmd)
         if (pixlet_out.returncode != 0):
             print("Failed to create gif from applet:", applet_path)
             return (None, None)
@@ -147,6 +150,16 @@ class PixletWrapper:
 
             start_time = PixletWrapper._parse_and_assert_time(start_time_str)
             applet["start_time"] = start_time
+
+            cmd_args = []
+            if "schema_vals" in applet:
+                for key, val in applet["schema_vals"].items():
+                    if isinstance(val, dict):
+                        cmd_args.append(f"{key}={json.dumps(val)}")
+                    else:
+                        cmd_args.append(f"{key}={val}")
+            print(cmd_args)
+            applet["cmd_args"] = cmd_args
 
             self._applets[start_time] = applet
 
