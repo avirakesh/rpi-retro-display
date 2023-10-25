@@ -147,6 +147,13 @@ directory, and update [`config.json`](./config.json) to point to the applet.
                                // Applies a multiplier to the output of pixlet binary.
                                // Value ideally between 0 and 1, both inclusive, but you do you!
                                // Negative brightness will clamp to 0
+            "schema_vals": {
+                // These are the user preferences that would typically be
+                // Selected by the user through UI. Lacking a UI, we use the JSON
+                // to set these values instead.
+                "<field-id-1>": "<field-value-1>",
+                "<field-id-2>": "<field-value-2>",
+            }
 
         },
         {
@@ -164,6 +171,85 @@ fiddling with the `*.star` files. It just applies a multiplier to the output of 
 `brightness = 0` will blank out the display, and `brightness = 1` will leave the output of `pixlet`
 untouched. Technically values higher that 1 are allowed, but not recommended as the output will
 saturate very quickly. Tinker with the `brightness` value and see what works for you!
+
+#### `schema_vals`:
+`schema_vals` deserves its own section because it is a little complicated to set up.
+
+To support user configuration, the pixlet SDK has a concept of [`schema`]
+(https://github.com/tidbyt/pixlet/blob/main/docs/schema/schema.md). Basically, the applets
+are supposed to implement a `get_schema()` method which tells the TidByt&copy; stack what
+options to surface to the users and then supply back to the applet at render time.
+
+Unfortunately, it doesn't seem like there is a clean way to pull the full schema from
+the applet without looking at the source, but fortunately, the schema isn't typically very
+complicated. From the official docs, they tend to look something like the following:
+```python
+def get_schema():
+    return schema.Schema(
+        version = "1",
+        fields = [
+            schema.Text(
+                id = "who",
+                name = "Who?",
+                desc = "Who to say hello to.",
+                icon = "user",
+            ),
+            schema.Toggle(
+                id = "small",
+                name = "Display small text",
+                desc = "A toggle to display smaller text.",
+                icon = "compress",
+                default = False,
+            ),
+             schema.Location(
+                id = "location",
+                name = "Location",
+                icon = "locationDot",
+                desc = "Location to spook the user with",
+            ),
+        ],
+    )
+```
+
+The fields have two main things to look out for:
+  - Field `id`: These are helpfully names `id` in the above example. Their values will be used as keys in
+    our `schema_vals` object.
+  - The type:
+        These are described by `schema.<Type>`, so `schema.Text` is of type "Text", and
+        `schema.Location` is of type "Location". \
+        \
+        These dictate the type of value we set as the value of the `field-id` in `schema_vals`.
+        The [schema doc](https://github.com/tidbyt/pixlet/blob/main/docs/schema/schema.md) goes
+        over all the possible types, and the JSON object that should be used for that type.
+
+With those two things, the `schema_vals` for a schema as described above would look something
+like:
+```javascript
+{
+    // NOTE: Comments are **NOT** allowed in JSON.
+    "applets": [
+        {
+            "name": "sample_applet",
+            // ...
+            "schema_vals": {
+                "who": "Willy Wonka",
+                "small": true,
+                "location": {
+	                "lat": "48.171895",
+	                "lng": "11.532129",
+	                "description": "Emmy-Noether-Straße 2, München, Germany",
+                    "locality": "München", // Not sure where this comes from unfortunately.
+	                "place_id": "ChIJZ85NtV12nkcR-q39Tk4ahVM", // Look up from Google PlacesAPI.
+	                "timezone": "Europe/Berlin"
+                }
+            }
+        },
+        {
+            ...
+        },
+    ],
+}
+```
 
 ### 5. [Optional] Extend Life Expectancy of the SD Card
 
