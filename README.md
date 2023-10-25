@@ -235,12 +235,12 @@ like:
                 "who": "Willy Wonka",
                 "small": true,
                 "location": {
-	                "lat": "48.171895",
-	                "lng": "11.532129",
-	                "description": "Emmy-Noether-Straße 2, München, Germany",
-                    "locality": "München", // Not sure where this comes from unfortunately.
-	                "place_id": "ChIJZ85NtV12nkcR-q39Tk4ahVM", // Look up from Google PlacesAPI.
-	                "timezone": "Europe/Berlin"
+                    "lat": "48.171895",
+                    "lng": "11.532129",
+                    "description": "Emmy-Noether-Straße 2, München, Germany",
+                    "locality": "München", // Not sure where this comes from
+                    "place_id": "ChIJZ85NtV12nkcR-q39Tk4ahVM", // From Google PlacesAPI.
+                    "timezone": "Europe/Berlin"
                 }
             }
         },
