@@ -158,7 +158,7 @@ class PixletWrapper:
                         cmd_args.append(f"{key}={json.dumps(val)}")
                     else:
                         cmd_args.append(f"{key}={val}")
-            print(cmd_args)
+            # print(cmd_args)
             applet["cmd_args"] = cmd_args
 
             self._applets[start_time] = applet
