@@ -224,6 +224,7 @@ class DisplayControllerDelegator:
         self._frame_writer_process.join()
         self._scene_queue.close()
 
+
     def queue_gif_to_display(self, gif_filepath, gif_hash, brightness):
         if not self._update_scene_metadata_if_needed(gif_hash, brightness):
             # The new gif has the same metadata as what is already displayed.
@@ -275,8 +276,11 @@ class DisplayControllerDelegator:
 
         self._scene_queue.put(frames)
 
-    # returns True if metadata was updated, False instead
+
     def _update_scene_metadata_if_needed(self, gif_hash, brightness):
+        """
+        returns True if metadata was updated, False instead
+        """
         curr_hash = self._current_scene_metadata["hash"]
         curr_brightness = self._current_scene_metadata["brightness"]
 

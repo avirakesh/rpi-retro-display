@@ -50,8 +50,10 @@ def main():
             pass
 
 
-# returns True if the thread should ask PixletWrapper for a new applet, False otherwise
 def _should_update_applet(curr_applet, next_applet_time):
+    """
+    returns True if the thread should ask UserConfig for a new applet, False otherwise
+    """
     if next_applet_time is None:
         # Never update applet
         return False
@@ -75,11 +77,13 @@ def _should_update_applet(curr_applet, next_applet_time):
     return curr_time >= next_applet_time
 
 
-# Returns the time at which this thread should wake up. This could be to update the applet, to
-# re-render the applet, or just to keep the OS from deprioritizing the script.
-# This is calculated as minimum of time for curr_applet to update and time at which the current
-# applet expires.
 def _get_wake_up_time(curr_applet, curr_applet_render_time, next_applet_day_time):
+    """
+    Returns the time at which this thread should wake up. This could be to update the applet, to
+    re-render the applet, or just to keep the OS from deprioritizing the script.
+    This is calculated as minimum of time for curr_applet to update and time at which the current
+    applet expires.
+    """
     curr_time = time.perf_counter()
     curr_day_time = UserConfig.get_day_time_secs()
 
@@ -107,10 +111,12 @@ def _get_wake_up_time(curr_applet, curr_applet_render_time, next_applet_day_time
     return curr_time + min(time_to_next_applet, time_to_curr_applet, _SECS_IN_AN_HOUR)
 
 
-# Queues passed applet to display_controller
-# current_render_time = None forces the applet to be queued
-# return the time at which the applet was queued to render
 def _render_applet_if_needed(pixlet_wrapper, display_controller, applet, curr_render_time=None):
+    """
+    Queues passed applet to display_controller
+    current_render_time = None forces the applet to be queued
+    return the time at which the applet was queued to render
+    """
     if curr_render_time is None:
         # Force expired
         expired = True

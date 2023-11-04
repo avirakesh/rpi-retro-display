@@ -42,8 +42,10 @@ class PixletWrapper:
             print("Deleted dir:", _OUTPUT_DIR)
 
 
-    # returns (path_to_gif, md5 checksum of gif)
     def create_gif_from_sketch(self, applet):
+        """
+        returns (path_to_gif, md5 checksum of gif)
+        """
         applet_path = applet["path"]
         applet_name = applet_path.split("/")[-1]
         applet_name = applet_name.split(".")[0]

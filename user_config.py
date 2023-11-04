@@ -68,16 +68,18 @@ class UserConfig:
             self._applets[start_time] = applet
 
 
-    # returns (current_applet, next_applet_time)
-    # returns (current_applet, None) if there is only one applet
-    #
-    # Called by main.py at the start and then again when get_day_time_secs() returns a
-    # value >= the returned next_applet_time. For simplicity, this function doesn't make assumtions
-    # based on previous calls.
     def get_current_applet(self):
+        """
+        returns (current_applet, next_applet_time)
+        returns (current_applet, None) if there is only one applet
+
+        Called by main.py at the start and then again when get_day_time_secs() returns a
+        value >= the returned next_applet_time. For simplicity, this function doesn't make assumtions
+        based on previous calls.
+        """
+
         # Simple time base automation.
         # Can be updated for more complex automation.
-
         if len(self._applets) == 1:
             return (self._applets.peekitem(0)[1], None)
 
@@ -121,11 +123,13 @@ class UserConfig:
         return (60 * 60 * hh) + (mm * 60)
 
 
-    # returns the time passed in seconds since 00:00:00 hrs (midnight)
-    # Time resolution is of seconds
-    # output range: [0, 86340)
     @staticmethod
     def get_day_time_secs():
+        """
+        returns the time passed in seconds since 00:00:00 hrs (midnight)
+        Time resolution is of seconds
+        output range: [0, 86340)
+        """
         curr_time = time.localtime()
         hh = int(time.strftime("%H", curr_time))
         mm = int(time.strftime("%M", curr_time))
