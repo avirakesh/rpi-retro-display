@@ -186,9 +186,10 @@ class PixletWrapper:
     # output range: [0, 86340)
     @staticmethod
     def get_day_time_secs():
-        hh = int(time.strftime("%H"))
-        mm = int(time.strftime("%M"))
-        ss = int(time.strftime("%S"))
+        curr_time = time.localtime()
+        hh = int(time.strftime("%H", curr_time))
+        mm = int(time.strftime("%M", curr_time))
+        ss = int(time.strftime("%S", curr_time))
         return (hh * 60 * 60) + (mm * 60) + ss
 
 
