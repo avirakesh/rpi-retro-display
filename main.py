@@ -10,6 +10,7 @@ import time
 from display_controller import DisplayControllerDelegator
 from numpy import exp
 from pixlet_wrapper import PixletWrapper
+from user_config import UserConfig
 
 _SECS_IN_AN_HOUR = 60 * 60
 _SECS_IN_A_DAY = 24 * _SECS_IN_AN_HOUR
@@ -17,11 +18,12 @@ _MS_TO_S = 0.001
 JSON_PATH = "config.json"
 
 def main():
-    with DisplayControllerDelegator() as display_controller, \
-         PixletWrapper(JSON_PATH) as pixlet_wrapper:
+    with UserConfig(JSON_PATH) as user_config, \
+         DisplayControllerDelegator() as display_controller, \
+         PixletWrapper() as pixlet_wrapper:
 
         # start by forcing a render of the applet
-        (curr_applet, next_applet_time) = pixlet_wrapper.get_current_applet()
+        (curr_applet, next_applet_time) = user_config.get_current_applet()
         print(f"Displaying Applet: {curr_applet['name']}")
         curr_render_time = _render_applet_if_needed(pixlet_wrapper, display_controller, curr_applet)
 
@@ -29,7 +31,7 @@ def main():
         try:
             while True:
                 if _should_update_applet(curr_applet, next_applet_time):
-                    (curr_applet, next_applet_time) = pixlet_wrapper.get_current_applet()
+                    (curr_applet, next_applet_time) = user_config.get_current_applet()
                     # Force render the new applet
                     print(f"Displaying Applet: {curr_applet['name']}")
                     curr_render_time = _render_applet_if_needed(pixlet_wrapper,
@@ -55,7 +57,7 @@ def _should_update_applet(curr_applet, next_applet_time):
         return False
 
     curr_applet_time = curr_applet["start_time"]
-    curr_time = PixletWrapper.get_day_time_secs()
+    curr_time = UserConfig.get_day_time_secs()
 
     # Simple case: next applet is scheduled for sometime today
     if curr_applet_time < next_applet_time :
@@ -79,7 +81,7 @@ def _should_update_applet(curr_applet, next_applet_time):
 # applet expires.
 def _get_wake_up_time(curr_applet, curr_applet_render_time, next_applet_day_time):
     curr_time = time.perf_counter()
-    curr_day_time = PixletWrapper.get_day_time_secs()
+    curr_day_time = UserConfig.get_day_time_secs()
 
     # figure out time after which the applet should be updated
     if next_applet_day_time is None:
