@@ -6,6 +6,7 @@
 ###############################################################################
 
 from sortedcontainers import SortedDict
+import copy
 import json
 import re
 import time
@@ -20,8 +21,8 @@ class UserConfig:
     def __enter__(self):
         with open(self._json_path) as json_file:
             json_data = json.load(json_file)
-            self._init_applets(json_data["applets"])
-            self._raw_applets = json_data["applets"]
+            self._init_applets(json_data)
+            print(self._applets, "\n")
         return self
 
 
@@ -30,7 +31,10 @@ class UserConfig:
         pass
 
 
-    def _init_applets(self, applets):
+    def _init_applets(self, json_data):
+        applets = json_data["applets"]
+        brightness = json_data["brightness"] if "brightness" in json_data else []
+
         start_time_to_applet = {}
         for applet in applets:
             start_time = applet["start_time"]
@@ -42,16 +46,27 @@ class UserConfig:
                 exit(1)
 
             start_time_to_applet[start_time] = applet
-        self._setup_applets(start_time_to_applet)
+
+        start_time_to_brightness = {};
+        for entry in brightness:
+            start_time = entry["start_time"]
+            if start_time_to_brightness.get(start_time) is not None:
+                print("Error: Found two brightness entries with the same start time.")
+                print("Start Time:", start_time)
+                print("Values:", start_time_to_brightness[start_time]["value"],
+                      "and", entry["value"])
+                exit(1)
+            start_time_to_brightness[start_time] = entry
+
+        self._process_config(start_time_to_applet, start_time_to_brightness)
 
 
-    def _setup_applets(self, start_time_to_applet):
-        self._applets = SortedDict(UserConfig.identity_fn)
+    def _process_config(self, start_time_to_applet, start_time_to_brightness):
+        applets = SortedDict(UserConfig.identity_fn)
+        brightness = SortedDict(UserConfig.identity_fn)
 
+        # Setup applet specific information required to render the applet
         for start_time_str, applet in start_time_to_applet.items():
-            applet["brightness"] = applet["brightness"] if "brightness" in applet else 1
-            applet["brightness"] = max(applet["brightness"], 0.0)
-
             start_time = UserConfig._parse_and_assert_time(start_time_str)
             applet["start_time"] = start_time
 
@@ -62,11 +77,40 @@ class UserConfig:
                         cmd_args.append(f"{key}={json.dumps(val)}")
                     else:
                         cmd_args.append(f"{key}={val}")
-            # print(cmd_args)
+
             applet["cmd_args"] = cmd_args
 
-            self._applets[start_time] = applet
+            applets[start_time] = applet
 
+        # If no brightness is provided, all applets have the default brightness.
+        if not start_time_to_brightness:
+            self._applets = applets
+            for start_time, applet in self._applets.items():
+                applet["brightness"] = 1.0
+            return
+
+        # We have some brightness information.
+        brightness = SortedDict(UserConfig.identity_fn)
+        for start_time_str, entry in start_time_to_brightness.items():
+            start_time = UserConfig._parse_and_assert_time(start_time_str)
+            brightness[start_time] = entry["value"]
+
+        start_times = set()
+        start_times.update(brightness.keys())
+        start_times.update(applets.keys())
+
+        self._applets = SortedDict(UserConfig.identity_fn)
+        # Start with the last applet and brightness of the day
+        last_applet = applets.peekitem(-1)[1]
+        last_brightness = brightness.peekitem(-1)[1]
+        for start_time in sorted(start_times):
+            if start_time in brightness:
+                last_brightness = brightness[start_time]
+            if start_time in applets:
+                last_applet = applets[start_time]
+
+            last_applet["brightness"] = last_brightness
+            self._applets[start_time] = copy.deepcopy(last_applet)
 
     def get_current_applet(self):
         """
@@ -89,7 +133,6 @@ class UserConfig:
 
         curr_applet = self._applets.peekitem(curr_applet_idx)[1]
         next_applet_time = self._applets.peekitem(next_applet_idx)[0]
-
 
         return (curr_applet, next_applet_time)
 

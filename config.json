@@ -5,16 +5,36 @@
             "path": "applets/clock.star",
             "dynamic": true,
             "refresh_interval_ms": 1500,
-            "start_time": "07:00",
-            "brightness": 1
+            "start_time": "07:00"
         },
         {
             "name": "hello_world",
             "path": "applets/hello_world.star",
             "dynamic": false,
             "refresh_interval_ms": 0,
+            "start_time": "22:00"
+        }
+    ],
+    "brightness": [
+        {
+            "start_time": "07:00",
+            "value": 1
+        },
+        {
+            "start_time": "08:00",
+            "value": 0.8
+        },
+        {
+            "start_time": "09:00",
+            "value": 0.6
+        },
+        {
             "start_time": "22:00",
-            "brightness": 0.25
+            "value": 0.25
+        },
+        {
+            "start_time": "23:30",
+            "value": 0.1
         }
     ]
 }

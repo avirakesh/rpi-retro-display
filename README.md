@@ -143,10 +143,6 @@ directory, and update [`config.json`](./config.json) to point to the applet.
             "start_time": "15:00", // time of day at which the applet should be enabled
                                    // two applets should not start at the same time
                                    // should be a valid 24 hour time
-            "brightness": 0.25 // Float. Optional. Default = 1. Brightness of the display.
-                               // Applies a multiplier to the output of pixlet binary.
-                               // Value ideally between 0 and 1, both inclusive, but you do you!
-                               // Negative brightness will clamp to 0
             "schema_vals": {
                 // These are the user preferences that would typically be
                 // Selected by the user through UI. Lacking a UI, we use the JSON
@@ -160,15 +156,30 @@ directory, and update [`config.json`](./config.json) to point to the applet.
             ...
         },
     ],
+    "brightness": [
+        {
+            "start_time": "05:00", // time of day at which the brightness value
+                                   // should be applied.
+                                   // two values should not start at the same time.
+                                   // should be a valid 24 hour time.
+            "value": 0.5 // Float. Brightness of the display.
+                         // Applies a multiplier to the output of pixlet binary.
+                         // Value ideally between 0 and 1, both inclusive, but you do you!
+                         // Negative brightness will clamp to 0
+        },
+        {
+
+        }
+    ]
 }
 ```
 
 The script supports basic time based automation. The `start_time` attribute of each applet will be
 honored if multiple applets are present.
 
-__A Note on `brightness`:__ The `brightness` attribute is intended to dim the display output without
+__A Note on `brightness`:__ The `brightness` valies is intended to dim the display output without
 fiddling with the `*.star` files. It just applies a multiplier to the output of `pixlet`.
-`brightness = 0` will blank out the display, and `brightness = 1` will leave the output of `pixlet`
+`value = 0` will blank out the display, and `value = 1` will leave the output of `pixlet`
 untouched. Technically values higher that 1 are allowed, but not recommended as the output will
 saturate very quickly. Tinker with the `brightness` value and see what works for you!
 

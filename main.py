@@ -8,7 +8,6 @@
 import time
 
 from display_controller import DisplayControllerDelegator
-from numpy import exp
 from pixlet_wrapper import PixletWrapper
 from user_config import UserConfig
 
@@ -18,7 +17,7 @@ _MS_TO_S = 0.001
 JSON_PATH = "config.json"
 
 def main():
-    with UserConfig(JSON_PATH) as user_config, \
+    with UserConfig(JSON_PATH) as user_config \
          DisplayControllerDelegator() as display_controller, \
          PixletWrapper() as pixlet_wrapper:
 
