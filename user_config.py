@@ -22,7 +22,6 @@ class UserConfig:
         with open(self._json_path) as json_file:
             json_data = json.load(json_file)
             self._init_applets(json_data)
-            print(self._applets, "\n")
         return self
 
 
