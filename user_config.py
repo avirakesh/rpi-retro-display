@@ -109,6 +109,7 @@ class UserConfig:
                 last_applet = applets[start_time]
 
             last_applet["brightness"] = last_brightness
+            last_applet["start_time"] = start_time
             self._applets[start_time] = copy.deepcopy(last_applet)
 
     def get_current_applet(self):
