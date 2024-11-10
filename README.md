@@ -308,11 +308,10 @@ A quick and dirty guide to mounting and using a ramdisk with the script follows:
 
 5. Update the script to write files to ramdisk
 
-    Open [`pixlet_wrapper.py`](./pixlet_wrapper.py) and set `_OUTPUT_ROOT` to `"/tmp/ramdisk/"`.
+    Open [`pixlet_wrapper.py`](./pixlet_wrapper.py) and set `_WORKING_DIR_ROOT` to `"/tmp/ramdisk/"`.
     The line should look like:
     ```python
-    _OUTPUT_ROOT = "/tmp/ramdisk/" # update this line
-    _OUTPUT_DIR = _OUTPUT_ROOT + "gifs" # don't need to change this line
+    _WORKING_DIR_ROOT = "/tmp/ramdisk" # update this line
     ```
 
 6. And voila! SD Card saved!
