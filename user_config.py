@@ -6,6 +6,8 @@
 ###############################################################################
 
 from sortedcontainers import SortedDict
+from os import path
+from setup_exception import SetupException
 import copy
 import json
 import re
@@ -17,18 +19,15 @@ class UserConfig:
     def __init__(self, json_path):
         self._json_path = json_path
 
-
     def __enter__(self):
         with open(self._json_path) as json_file:
             json_data = json.load(json_file)
             self._init_applets(json_data)
         return self
 
-
     def __exit__(self, exc_type, exc_val, exc_tb):
         # No cleanup needed
         pass
-
 
     def _init_applets(self, json_data):
         applets = json_data["applets"]
@@ -57,8 +56,18 @@ class UserConfig:
                 exit(1)
             start_time_to_brightness[start_time] = entry
 
+        self._validate_applets(start_time_to_applet)
         self._process_config(start_time_to_applet, start_time_to_brightness)
 
+    def _validate_applets(self, start_time_to_applet):
+        # Check that all applets have a valid path.
+        for applet in start_time_to_applet.values():
+            applet_path = path.abspath(applet["path"])
+            if not path.exists(applet_path):
+                applet_name = applet["name"]
+                raise SetupException(
+                    f"Applet path '{applet_path}', for applet '{applet_name}', does not exist."
+                )
 
     def _process_config(self, start_time_to_applet, start_time_to_brightness):
         applets = SortedDict(UserConfig.identity_fn)
@@ -136,19 +145,16 @@ class UserConfig:
 
         return (curr_applet, next_applet_time)
 
-
     def _get_current_applet_idx(self, curr_time):
         curr_idx = self._applets.bisect_key_left(curr_time)
 
         if curr_idx == len(self._applets):
             return -1
 
-
         if self._applets.peekitem(curr_idx)[0] == curr_time:
             return curr_idx
 
         return curr_idx - 1
-
 
     @staticmethod
     def _parse_and_assert_time(time_str):
@@ -165,7 +171,6 @@ class UserConfig:
 
         return (60 * 60 * hh) + (mm * 60)
 
-
     @staticmethod
     def get_day_time_secs():
         """
@@ -178,7 +183,6 @@ class UserConfig:
         mm = int(time.strftime("%M", curr_time))
         ss = int(time.strftime("%S", curr_time))
         return (hh * 60 * 60) + (mm * 60) + ss
-
 
     @staticmethod
     def identity_fn(x):
