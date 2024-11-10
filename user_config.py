@@ -41,7 +41,7 @@ class UserConfig:
                 print("Error: Found two applets with the same start time.")
                 print("Start Time:", start_time)
                 print("Applets:", start_time_to_applet[start_time]["name"], "and", applet["name"])
-                exit(1)
+                raise SetupException("Found duplicate applet start times")
 
             start_time_to_applet[start_time] = applet
 
@@ -53,7 +53,7 @@ class UserConfig:
                 print("Start Time:", start_time)
                 print("Values:", start_time_to_brightness[start_time]["value"],
                       "and", entry["value"])
-                exit(1)
+                raise SetupException("Found duplicate brightness start times")
             start_time_to_brightness[start_time] = entry
 
         self._validate_applets(start_time_to_applet)

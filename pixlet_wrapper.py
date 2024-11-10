@@ -7,6 +7,7 @@
 
 import subprocess
 from os import path, symlink, makedirs
+from setup_exception import SetupException
 
 _WORKING_DIR_ROOT = ""
 _OUTPUT_DIR = path.join(_WORKING_DIR_ROOT, "gifs")
@@ -21,19 +22,19 @@ class PixletWrapper:
         if cmd_out.returncode != 0:
             print("Command 'pixlet' not found.")
             print("Make sure 'pixlet' binary is in PATH.")
-            exit(1)
+            raise SetupException("Command 'pixlet' not found.")
 
         cmd_out = subprocess.run(["which", "md5sum"])
         if cmd_out.returncode != 0:
             print("Command 'md5sum' not found.")
             print("Make sure 'md5sum' binary is in PATH.")
-            exit(1)
+            raise SetupException("Command 'md5sum' not found.")
 
     def __enter__(self):
         cmd_out = subprocess.run(["mkdir", "-p", _OUTPUT_DIR])
         if cmd_out.returncode != 0:
             print("Failed to create output 'gifs' directory:", _OUTPUT_DIR)
-            exit(1)
+            raise SetupException("Failed to create output directory.")
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
