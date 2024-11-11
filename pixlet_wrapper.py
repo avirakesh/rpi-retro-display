@@ -12,7 +12,7 @@ from setup_exception import SetupException
 _WORKING_DIR_ROOT = ""
 _OUTPUT_DIR = path.join(_WORKING_DIR_ROOT, "gifs")
 
-# this path is a workaround for pixlet bug https://github.com/tidbyt/pixlet/issues/1084
+# this path is a workaround for pixlet bug https://github.com/tidbyt/pixlet/issues/1082
 _INPUT_DIR = path.join(_WORKING_DIR_ROOT, "input")
 
 
