@@ -13,7 +13,8 @@ import json
 import re
 import time
 
-_TIME_REGEX = r"(\d\d):(\d\d)" # pattern for hh:mm
+_TIME_REGEX = r"(\d\d):(\d\d)"  # pattern for hh:mm
+
 
 class UserConfig:
     def __init__(self, json_path):
@@ -40,19 +41,28 @@ class UserConfig:
             if start_time_to_applet.get(start_time) is not None:
                 print("Error: Found two applets with the same start time.")
                 print("Start Time:", start_time)
-                print("Applets:", start_time_to_applet[start_time]["name"], "and", applet["name"])
+                print(
+                    "Applets:",
+                    start_time_to_applet[start_time]["name"],
+                    "and",
+                    applet["name"],
+                )
                 raise SetupException("Found duplicate applet start times")
 
             start_time_to_applet[start_time] = applet
 
-        start_time_to_brightness = {};
+        start_time_to_brightness = {}
         for entry in brightness:
             start_time = entry["start_time"]
             if start_time_to_brightness.get(start_time) is not None:
                 print("Error: Found two brightness entries with the same start time.")
                 print("Start Time:", start_time)
-                print("Values:", start_time_to_brightness[start_time]["value"],
-                      "and", entry["value"])
+                print(
+                    "Values:",
+                    start_time_to_brightness[start_time]["value"],
+                    "and",
+                    entry["value"],
+                )
                 raise SetupException("Found duplicate brightness start times")
             start_time_to_brightness[start_time] = entry
 
@@ -159,15 +169,18 @@ class UserConfig:
     @staticmethod
     def _parse_and_assert_time(time_str):
         match = re.findall(_TIME_REGEX, time_str)
-        assert len(match) == 1, \
-               f"Invalid time: '{time_str}'. start_time should match the pattern hh:mm"
+        assert (
+            len(match) == 1
+        ), f"Invalid time: '{time_str}'. start_time should match the pattern hh:mm"
 
         hhmm = match[0]
         (hh, mm) = (int(hhmm[0]), int(hhmm[1]))
-        assert 0 <= hh and 23 >= hh, \
-               f"Invalid time: '{time_str}'. {hh} should be between 0 and 23 inclusive"
-        assert 0 <= mm and 59 >= mm, \
-               f"Invalid time: '{time_str}'. {mm} should be between 0 and 59 inclusive"
+        assert (
+            0 <= hh and 23 >= hh
+        ), f"Invalid time: '{time_str}'. {hh} should be between 0 and 23 inclusive"
+        assert (
+            0 <= mm and 59 >= mm
+        ), f"Invalid time: '{time_str}'. {mm} should be between 0 and 59 inclusive"
 
         return (60 * 60 * hh) + (mm * 60)
 

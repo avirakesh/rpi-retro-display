@@ -16,15 +16,18 @@ _SECS_IN_A_DAY = 24 * _SECS_IN_AN_HOUR
 _MS_TO_S = 0.001
 JSON_PATH = "config.json"
 
+
 def main():
-    with UserConfig(JSON_PATH) as user_config, \
-         DisplayControllerDelegator() as display_controller, \
-         PixletWrapper() as pixlet_wrapper:
+    with UserConfig(
+        JSON_PATH
+    ) as user_config, DisplayControllerDelegator() as display_controller, PixletWrapper() as pixlet_wrapper:
 
         # start by forcing a render of the applet
         (curr_applet, next_applet_time) = user_config.get_current_applet()
         print(f"Displaying Applet: {curr_applet['name']}")
-        curr_render_time = _render_applet_if_needed(pixlet_wrapper, display_controller, curr_applet)
+        curr_render_time = _render_applet_if_needed(
+            pixlet_wrapper, display_controller, curr_applet
+        )
 
         # main program loop
         try:
@@ -33,16 +36,20 @@ def main():
                     (curr_applet, next_applet_time) = user_config.get_current_applet()
                     # Force render the new applet
                     print(f"Displaying Applet: {curr_applet['name']}")
-                    curr_render_time = _render_applet_if_needed(pixlet_wrapper,
-                                                                display_controller,
-                                                                curr_applet)
+                    curr_render_time = _render_applet_if_needed(
+                        pixlet_wrapper, display_controller, curr_applet
+                    )
                 elif curr_applet["dynamic"]:
-                    curr_render_time = _render_applet_if_needed(pixlet_wrapper,
-                                                                display_controller,
-                                                                curr_applet,
-                                                                curr_render_time)
+                    curr_render_time = _render_applet_if_needed(
+                        pixlet_wrapper,
+                        display_controller,
+                        curr_applet,
+                        curr_render_time,
+                    )
 
-                wakeup_time = _get_wake_up_time(curr_applet, curr_render_time, next_applet_time)
+                wakeup_time = _get_wake_up_time(
+                    curr_applet, curr_render_time, next_applet_time
+                )
                 while time.perf_counter() < wakeup_time:
                     time.sleep(wakeup_time - time.perf_counter())
         except KeyboardInterrupt:
@@ -61,8 +68,8 @@ def _should_update_applet(curr_applet, next_applet_time):
     curr_time = UserConfig.get_day_time_secs()
 
     # Simple case: next applet is scheduled for sometime today
-    if curr_applet_time < next_applet_time :
-         return curr_time >= next_applet_time
+    if curr_applet_time < next_applet_time:
+        return curr_time >= next_applet_time
 
     # Weird case: Last applet of the day is currently displayed
 
@@ -98,19 +105,24 @@ def _get_wake_up_time(curr_applet, curr_applet_render_time, next_applet_day_time
         # next_applet_time is on the same day
         time_to_next_applet = next_applet_day_time - curr_day_time
 
-
     if not curr_applet["dynamic"]:
         # Static applet, default to an hour
         time_to_curr_applet = _SECS_IN_AN_HOUR
     else:
-        curr_applet_render_time = curr_time if curr_applet_render_time is None else curr_applet_render_time
-        curr_applet_expiry = curr_applet_render_time + (curr_applet["refresh_interval_ms"] * _MS_TO_S)
+        curr_applet_render_time = (
+            curr_time if curr_applet_render_time is None else curr_applet_render_time
+        )
+        curr_applet_expiry = curr_applet_render_time + (
+            curr_applet["refresh_interval_ms"] * _MS_TO_S
+        )
         time_to_curr_applet = curr_applet_expiry - curr_time
 
     return curr_time + min(time_to_next_applet, time_to_curr_applet, _SECS_IN_AN_HOUR)
 
 
-def _render_applet_if_needed(pixlet_wrapper, display_controller, applet, curr_render_time=None):
+def _render_applet_if_needed(
+    pixlet_wrapper, display_controller, applet, curr_render_time=None
+):
     """
     Queues passed applet to display_controller
     current_render_time = None forces the applet to be queued
@@ -129,13 +141,16 @@ def _render_applet_if_needed(pixlet_wrapper, display_controller, applet, curr_re
 
     (gif_path, gif_hash) = pixlet_wrapper.create_gif_from_sketch(applet)
     if gif_path is not None:
-        display_controller.queue_gif_to_display(gif_path, gif_hash, applet["brightness"])
+        display_controller.queue_gif_to_display(
+            gif_path, gif_hash, applet["brightness"]
+        )
     else:
         print(f"Error creating gif for '{applet['name']}'")
         # didn't render, don't update render time
         return curr_render_time
 
     return time.perf_counter()
+
 
 if __name__ == "__main__":
     main()
