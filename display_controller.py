@@ -37,7 +37,7 @@ class Frame:
     # number of times the frames should loop. 0 for infinite
     loop_count: int = 0
     # used and filled by DisplayController. Time (in s) at which the frame was drawn
-    drawn_at_time: float = 0.0
+    drawn_at: float = 0.0
 
 
 class DisplayController:
@@ -98,10 +98,14 @@ class DisplayController:
 
         # Pretend this frame has already expired
         white_frame_drawn_at = time.perf_counter() - (2 * _DEFAULT_DISPLAY_TIME)
-        white_frame = Frame(img=white_img, drawn_at_time=white_frame_drawn_at)
+        white_frame = Frame(
+            img=white_img,
+            brightness_adjusted_img=white_img,
+            drawn_at=white_frame_drawn_at,
+        )
 
         black_img = Image.new("RGB", (_DISPLAY_SIZE[1], _DISPLAY_SIZE[0]), (0, 0, 0))
-        black_frame = Frame(img=black_img)
+        black_frame = Frame(img=black_img, brightness_adjusted_img=black_img)
 
         self._frames_queue.append(white_frame)
         self._frames_queue.append(black_frame)
@@ -171,7 +175,7 @@ class DisplayController:
     def _draw_next_frame(self):
         if (
             len(self._frames_queue) == 1
-            and self._brightness.value() == self._frames_queue[0].drawn_at_brightness
+            and self._brightness.value == self._frames_queue[0].brightness
         ):
             # print("Last frame in queue, redrawing last frame")
             self._frames_queue[0].drawn_at = time.perf_counter()
@@ -215,15 +219,15 @@ class DisplayController:
         Adjusts the brightness of a given frame in place, if needed. The fields "brightness" and
         "brightness_adjusted_img" are updated with the new values.
         """
-        target_brightness = self._brightness.value()
-        if target_brightness == -1 or frame.drawn_at_brightness == target_brightness:
+        target_brightness = self._brightness.value
+        if target_brightness == -1 or frame.brightness == target_brightness:
             # Already calculated. Nothing to do.
             return
 
         if target_brightness == _MAX_AD_HOC_BRIGHTNESS:
             # No brightness adjustment needed.
             frame.brightness_adjusted_img = deepcopy(frame.img)
-            frame.drawn_at_brightness = target_brightness
+            frame.brightness = target_brightness
             return
 
         # Change the brightness of Frame.img and store it
@@ -232,7 +236,7 @@ class DisplayController:
             target_brightness / _MAX_AD_HOC_BRIGHTNESS
         )
         frame.brightness_adjusted_img = adjusted_img.convert("RGB")
-        frame.drawn_at_brightness = target_brightness
+        frame.brightness = target_brightness
 
 
 class DisplayControllerDelegator:
@@ -243,7 +247,7 @@ class DisplayControllerDelegator:
         self._current_scene_metadata = {"hash": None, "brightness": None}
 
         self._display_controller = DisplayController(
-            self._should_exit, self._scene_queue
+            self._should_exit, self._scene_queue, self._brightness
         )
 
     def __enter__(self):
@@ -291,10 +295,11 @@ class DisplayControllerDelegator:
                     else:
                         img = im
 
+                    raw_img = im.convert("RGB")
                     rgb_img = img.convert("RGB")
 
                     frame = Frame(
-                        img=im,
+                        img=raw_img,
                         brightness_adjusted_img=rgb_img,
                         brightness=brightness,
                         should_loop=should_loop,

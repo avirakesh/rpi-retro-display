@@ -171,4 +171,4 @@ def _render_applet_if_needed(
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
