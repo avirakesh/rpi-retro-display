@@ -120,6 +120,12 @@ class DisplayController:
             self._draw_next_frame()
             return
 
+        curr_brightness = curr_frame.brightness
+        if curr_brightness != self._brightness.value:
+            # print(f"Redrawing frame with brightness: {self._brightness.value}")
+            self._refresh_curr_frame()
+            return
+
         try:
             # Wait for next scene to come in for as long
             # as the current frame lasts.
@@ -172,12 +178,21 @@ class DisplayController:
         self._frames_queue.append(last_frame)  # re-insert last frame
         self._frames_queue.extend(temp_frames)  # add new frames to queue, will be drawn
 
+    def _refresh_curr_frame(self):
+        """
+        Redraw the current frame with brightness adjustments. Does NOT update
+        drawn_at timestamp.
+        """
+        self._adjust_brightness(self._frames_queue[0])
+        self.canvas.SetImage(self._frames_queue[0].brightness_adjusted_img)
+        self.canvas = self._rgb_matrix.SwapOnVSync(self.canvas)
+
     def _draw_next_frame(self):
         if (
             len(self._frames_queue) == 1
             and self._brightness.value == self._frames_queue[0].brightness
         ):
-            # print("Last frame in queue, redrawing last frame")
+            # print("Last frame in queue, resetting drawn_at timestamp")
             self._frames_queue[0].drawn_at = time.perf_counter()
             return
 
@@ -192,8 +207,8 @@ class DisplayController:
 
         # If this was the only frame in the queue, re-insert it to be drawn
         if len(self._frames_queue) == 0:
+            # print("Only one frame in queue. Re-inserting it to be drawn again.")
             self._frames_queue.append(curr_frame)
-            return
 
         self._adjust_brightness(self._frames_queue[0])
 
@@ -222,6 +237,7 @@ class DisplayController:
         target_brightness = self._brightness.value
         if target_brightness == -1 or frame.brightness == target_brightness:
             # Already calculated. Nothing to do.
+            frame.brightness = target_brightness
             return
 
         if target_brightness == _MAX_AD_HOC_BRIGHTNESS:
