@@ -16,7 +16,7 @@ class Server:
     def _setup_routes(self):
         # Define routes here
         @self.app.post("/brightness")
-        async def set_brightness(self, brightness: Brightness):
+        async def set_brightness(brightness: Brightness):
             if brightness.brightness < 0 or brightness.brightness > 1:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,

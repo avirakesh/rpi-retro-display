@@ -29,8 +29,10 @@ async def main():
         brightness_queue = asyncio.Queue[Brightness]()
 
         if user_config.should_setup_brightness_api():
-            server = Server(brightness_queue)
-            uvicorn.run(server.app, host="0.0.0.0", port=8080)
+            server_obj = Server(brightness_queue)
+            config = uvicorn.Config(app=server_obj.app, host="0.0.0.0", port=8080)
+            server = uvicorn.Server(config=config)
+            asyncio.create_task(server.serve())
 
         # start by forcing a render of the applet
         (curr_applet, next_applet_time) = user_config.get_current_applet()
