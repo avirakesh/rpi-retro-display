@@ -7,9 +7,13 @@
 
 import time
 
+import asyncio
 from display_controller import DisplayControllerDelegator
 from pixlet_wrapper import PixletWrapper
 from user_config import UserConfig
+from server import Server, Brightness
+import uvicorn
+
 
 _SECS_IN_AN_HOUR = 60 * 60
 _SECS_IN_A_DAY = 24 * _SECS_IN_AN_HOUR
@@ -17,10 +21,16 @@ _MS_TO_S = 0.001
 JSON_PATH = "config.json"
 
 
-def main():
+async def main():
     with UserConfig(
         JSON_PATH
     ) as user_config, DisplayControllerDelegator() as display_controller, PixletWrapper() as pixlet_wrapper:
+
+        brightness_queue = asyncio.Queue[Brightness]()
+
+        if user_config.should_setup_brightness_api():
+            server = Server(brightness_queue)
+            uvicorn.run(server.app, host="0.0.0.0", port=8080)
 
         # start by forcing a render of the applet
         (curr_applet, next_applet_time) = user_config.get_current_applet()
@@ -51,7 +61,15 @@ def main():
                     curr_applet, curr_render_time, next_applet_time
                 )
                 while time.perf_counter() < wakeup_time:
-                    time.sleep(wakeup_time - time.perf_counter())
+                    try:
+                        sleep_time = max(wakeup_time - time.perf_counter(), 0.001)
+                        new_brightness = await asyncio.wait_for(
+                            brightness_queue.get(), timeout=sleep_time
+                        )
+                        display_controller.set_brightness(new_brightness.brightness)
+                    except asyncio.TimeoutError:
+                        # No new brightness. Let the loop continue
+                        pass
         except KeyboardInterrupt:
             pass
 

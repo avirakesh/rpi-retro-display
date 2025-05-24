@@ -15,26 +15,29 @@
             "start_time": "22:00"
         }
     ],
-    "brightness": [
-        {
-            "start_time": "07:00",
-            "value": 1
-        },
-        {
-            "start_time": "08:00",
-            "value": 0.8
-        },
-        {
-            "start_time": "09:00",
-            "value": 0.6
-        },
-        {
-            "start_time": "22:00",
-            "value": 0.25
-        },
-        {
-            "start_time": "23:30",
-            "value": 0.1
-        }
-    ]
+    "brightness": {
+        "source": "schedule",
+        "schedule": [
+            {
+                "start_time": "07:00",
+                "value": 1
+            },
+            {
+                "start_time": "08:00",
+                "value": 0.8
+            },
+            {
+                "start_time": "09:00",
+                "value": 0.6
+            },
+            {
+                "start_time": "22:00",
+                "value": 0.25
+            },
+            {
+                "start_time": "23:30",
+                "value": 0.1
+            }
+        ]
+    }
 }

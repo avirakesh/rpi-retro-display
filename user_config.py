@@ -32,7 +32,11 @@ class UserConfig:
 
     def _init_applets(self, json_data):
         applets = json_data["applets"]
-        brightness = json_data["brightness"] if "brightness" in json_data else []
+        brightness = (
+            json_data["brightness"]
+            if "brightness" in json_data
+            else {"source": "schedule", "schedule": []}
+        )
 
         start_time_to_applet = {}
         for applet in applets:
@@ -52,19 +56,34 @@ class UserConfig:
             start_time_to_applet[start_time] = applet
 
         start_time_to_brightness = {}
-        for entry in brightness:
-            start_time = entry["start_time"]
-            if start_time_to_brightness.get(start_time) is not None:
-                print("Error: Found two brightness entries with the same start time.")
-                print("Start Time:", start_time)
-                print(
-                    "Values:",
-                    start_time_to_brightness[start_time]["value"],
-                    "and",
-                    entry["value"],
+        if brightness["source"] == "schedule":
+            if "schedule" not in brightness:
+                raise SetupException(
+                    "Brightness source set to schedule but no schedule provided."
                 )
-                raise SetupException("Found duplicate brightness start times")
-            start_time_to_brightness[start_time] = entry
+            self._should_setup_brightness_api = False
+            for entry in brightness["schedule"]:
+                start_time = entry["start_time"]
+                if start_time_to_brightness.get(start_time) is not None:
+                    print(
+                        "Error: Found two brightness entries with the same start time."
+                    )
+                    print("Start Time:", start_time)
+                    print(
+                        "Values:",
+                        start_time_to_brightness[start_time]["value"],
+                        "and",
+                        entry["value"],
+                    )
+                    raise SetupException("Found duplicate brightness start times")
+                start_time_to_brightness[start_time] = entry
+        elif brightness["source"] == "api":
+            self._should_setup_brightness_api = True
+        else:
+            raise SetupException(
+                f"Invalid brightness source: {brightness['source']}. "
+                f'Must be one of ["schedule", "api"]'
+            )
 
         self._validate_applets(start_time_to_applet)
         self._process_config(start_time_to_applet, start_time_to_brightness)
@@ -130,6 +149,12 @@ class UserConfig:
             last_applet["brightness"] = last_brightness
             last_applet["start_time"] = start_time
             self._applets[start_time] = copy.deepcopy(last_applet)
+
+    def should_setup_brightness_api(self):
+        """
+        Returns True if the user wants to call a REST API to set the brightness of the display.
+        """
+        return self._should_setup_brightness_api
 
     def get_current_applet(self):
         """

@@ -7,3 +7,5 @@
 numpy
 pillow
 sortedcontainers
+uvicorn
+fastapi[standard]

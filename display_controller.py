@@ -6,6 +6,7 @@
 ###############################################################################
 
 from collections import deque
+from copy import deepcopy
 from dataclasses import dataclass
 from multiprocessing import Process, Queue, Value
 from PIL import Image, ImageEnhance
@@ -17,23 +18,31 @@ import time
 _DISPLAY_SIZE = (32, 64, 3)  # 32 rows, 64 columns, 3 colors for each pixel
 _DEFAULT_DISPLAY_TIME = 1  # default time to wait for next frame, in seconds
 _MS_TO_S = 0.001
+_MAX_AD_HOC_BRIGHTNESS = 1000
 
 
 @dataclass
 class Frame:
-    img: Image  # Should be of size _DISPLAY_SIZE
-    duration: float = (
-        _DEFAULT_DISPLAY_TIME  # time (in s) how long the frame should be on display.
-    )
-    should_loop: bool = False  # true if the frames should loop
-    loop_count: int = 0  # number of times the frames should loop. 0 for infinite
-    drawn_at: float = (
-        0.0  # used and filled by DisplayController. Time (in s) at which the frame was drawn
-    )
+    # Original unadjusted image. Should be of size _DISPLAY_SIZE
+    img: Image
+    # This is the output of img when adjusted by brightness. Should be of size _DISPLAY_SIZE
+    brightness_adjusted_img: Image
+    # Brightness at which the frame was drawn. Value of [0, _MAX_AD_HOC_BRIGHTNESS] that maps
+    # a range of [0%, 100%]
+    brightness: int = -1
+    # time (in s) how long the frame should be on display.
+    duration: float = _DEFAULT_DISPLAY_TIME
+    # true if the frames should loop
+    should_loop: bool = False
+    # number of times the frames should loop. 0 for infinite
+    loop_count: int = 0
+    # used and filled by DisplayController. Time (in s) at which the frame was drawn
+    drawn_at_time: float = 0.0
 
 
 class DisplayController:
-    def __init__(self, should_exit, scene_queue):
+
+    def __init__(self, should_exit, scene_queue, brightness):
         # multiprocessing.Value [boolean] object.
         # Used to check if the process should terminate.
         # The value will the changed by DisplayControllerDelegator when the program
@@ -44,6 +53,14 @@ class DisplayController:
         # This will be populated by DisplayControllerDelegator
         # One scene consists of a list of Frames to display.
         self._scene_queue = scene_queue
+
+        # multiprocessing.Value [int] object.
+        # Used to store the brightness at which the image should be displayed.
+        # This value will be applied by the DisplayControllerDelegator to the Frame.img
+        # object right before it is displayed.
+        # Value of -1 means no brightness adjustment will be applied, i.e. Frame.img will be shown
+        # as is. See Frame.brightness for details.
+        self._brightness = brightness
 
     def run(self):
         print("Running DisplayController process.")
@@ -81,7 +98,7 @@ class DisplayController:
 
         # Pretend this frame has already expired
         white_frame_drawn_at = time.perf_counter() - (2 * _DEFAULT_DISPLAY_TIME)
-        white_frame = Frame(img=white_img, drawn_at=white_frame_drawn_at)
+        white_frame = Frame(img=white_img, drawn_at_time=white_frame_drawn_at)
 
         black_img = Image.new("RGB", (_DISPLAY_SIZE[1], _DISPLAY_SIZE[0]), (0, 0, 0))
         black_frame = Frame(img=black_img)
@@ -134,6 +151,7 @@ class DisplayController:
                 continue
 
             frame.drawn_at = 0.0
+            self._adjust_brightness(frame)
             temp_frames.append(frame)
 
         if len(temp_frames) == 0:
@@ -151,7 +169,10 @@ class DisplayController:
         self._frames_queue.extend(temp_frames)  # add new frames to queue, will be drawn
 
     def _draw_next_frame(self):
-        if len(self._frames_queue) == 1:
+        if (
+            len(self._frames_queue) == 1
+            and self._brightness.value() == self._frames_queue[0].drawn_at_brightness
+        ):
             # print("Last frame in queue, redrawing last frame")
             self._frames_queue[0].drawn_at = time.perf_counter()
             return
@@ -164,7 +185,15 @@ class DisplayController:
             return
 
         curr_frame = self._frames_queue.popleft()
-        self.canvas.SetImage(self._frames_queue[0].img)
+
+        # If this was the only frame in the queue, re-insert it to be drawn
+        if len(self._frames_queue) == 0:
+            self._frames_queue.append(curr_frame)
+            return
+
+        self._adjust_brightness(self._frames_queue[0])
+
+        self.canvas.SetImage(self._frames_queue[0].brightness_adjusted_img)
         self.canvas = self._rgb_matrix.SwapOnVSync(self.canvas)
         self._frames_queue[0].drawn_at = time.perf_counter()
 
@@ -181,10 +210,35 @@ class DisplayController:
         curr_frame.drawn_at = 0.0
         self._frames_queue.append(curr_frame)
 
+    def _adjust_brightness(self, frame: Frame):
+        """
+        Adjusts the brightness of a given frame in place, if needed. The fields "brightness" and
+        "brightness_adjusted_img" are updated with the new values.
+        """
+        target_brightness = self._brightness.value()
+        if target_brightness == -1 or frame.drawn_at_brightness == target_brightness:
+            # Already calculated. Nothing to do.
+            return
+
+        if target_brightness == _MAX_AD_HOC_BRIGHTNESS:
+            # No brightness adjustment needed.
+            frame.brightness_adjusted_img = deepcopy(frame.img)
+            frame.drawn_at_brightness = target_brightness
+            return
+
+        # Change the brightness of Frame.img and store it
+        tmp_im = frame.img.convert("RGBA")
+        adjusted_img = ImageEnhance.Brightness(tmp_im).enhance(
+            target_brightness / _MAX_AD_HOC_BRIGHTNESS
+        )
+        frame.brightness_adjusted_img = adjusted_img.convert("RGB")
+        frame.drawn_at_brightness = target_brightness
+
 
 class DisplayControllerDelegator:
     def __init__(self):
         self._should_exit = Value("b", 0, lock=False)
+        self._brightness = Value("i", -1, lock=False)
         self._scene_queue = Queue()
         self._current_scene_metadata = {"hash": None, "brightness": None}
 
@@ -240,7 +294,9 @@ class DisplayControllerDelegator:
                     rgb_img = img.convert("RGB")
 
                     frame = Frame(
-                        img=rgb_img,
+                        img=im,
+                        brightness_adjusted_img=rgb_img,
+                        brightness=brightness,
                         should_loop=should_loop,
                         duration=frame_duration,
                         loop_count=loop_count,
@@ -253,6 +309,9 @@ class DisplayControllerDelegator:
                 pass
 
         self._scene_queue.put(frames)
+
+    def set_brightness(self, brightness: float):
+        self._brightness.value = round(brightness * _MAX_AD_HOC_BRIGHTNESS)
 
     def _update_scene_metadata_if_needed(self, gif_hash, brightness):
         """
