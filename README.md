@@ -72,14 +72,54 @@ _Make sure you can run the python samples from the tutorial before proceeding._
 
 3. Install project dependencies
 
-    ```console
-    $ pip3 install -r requirements.txt
-    ```
+    Intalling project dependencies used to be as simple as running
+    `pip3 install -r requirements.txt`. However, Linux developers, in an attempt to save
+    ourselves from ourselves have started throwing a warning if `pip3 install` is called outside
+    of a virtual environment. For various reasons, this is a good decision on Linux's part.
+
+    So, here is a quick and dirty guide to getting this project running with venv.
+
+    1. Ensure you have `venv` installed. If not, install it using
+
+        ```console
+        $ sudo apt install python3-venv
+        ```
+
+    2. Navigate your terminal to the directory where you cloned/downloaded this repo, I will assume
+       it is in `~/rpi-retro-display`
+
+        ```console
+        $ cd ~/rpi-retro-display
+        ```
+
+    3. Create a virtual environment using `venv`:
+
+        ```console
+        $ python3 -m venv --system-site-packages env
+        ```
+
+        The `--system-site-packages` flag allows venv to use packages installed globally on your
+        system. `rpi-rgb-led-matrix` installs the python bindings system wide, which venv will be
+        unable to find otherwise.
+
+    4. Activate the virtual environment:
+
+        ```console
+        $ source env/bin/activate # this would need to be done for every new terminal session.
+        ```
+
+    5. Install dependencies using pip:
+
+        ```console
+        $ pip install -r requirements.txt
+        ```
 
 ### 3. Run the Script
 
-Go to this repo's directory, and run the script with
+Go to this repo's directory, activate venv, and run the script with
 ```console
+$ cd ~/rpi-retro-display
+$ source env/bin/activate
 $ python main.py
 ```
 
@@ -96,13 +136,14 @@ and add the path to `pixlet` binary in `secure_path`. It should look something l
 Defaults        secure_path="....:/dir/containing/pixlet"
 ```
 
-With that, run the script with:
+Finally, run the script with:
 
 ```console
-$ sudo -E python main.py
+$ sudo -E $(command -v python) main.py
 ```
 
-The `-E` flag is needed for sudo to pick up all python modules available in the current environment.
+- The `-E` flag is needed for sudo to pick up all python modules available in the current environment.
+- `$(command -v python)` is needed to get the path to the python interpreter that venv uses.
 
 You should see something like
 
@@ -156,38 +197,35 @@ directory, and update [`config.json`](./config.json) to point to the applet.
             ...
         },
     ],
-    "brightness": [
-        {
-            "start_time": "05:00", // time of day at which the brightness value
-                                   // should be applied.
-                                   // two values should not start at the same time.
-                                   // should be a valid 24 hour time.
-            "value": 0.5 // Float. Brightness of the display.
-                         // Applies a multiplier to the output of pixlet binary.
-                         // Value ideally between 0 and 1, both inclusive, but you do you!
-                         // Negative brightness will clamp to 0
-        },
-        {
-
-        }
-    ]
+    "brightness": {
+        "source": "schedule" | "api"
+        "schedule": [ // only needed if source is "schedule"
+            {
+                "start_time": "05:00", // time of day at which the brightness value
+                                       // should be applied.
+                                       // two values must not start at the same time.
+                                       // must be a valid 24 hour time.
+                "value": 0.5 // Float. Brightness of the display.
+                             // Applies a multiplier to the output of pixlet binary.
+                             // Value ideally between 0 and 1, both inclusive, but you do you!
+                             // Negative brightness will clamp to 0
+            },
+            {
+                ...
+            }
+        ]
+    }
 }
 ```
 
 The script supports basic time based automation. The `start_time` attribute of each applet will be
 honored if multiple applets are present.
 
-__A Note on `brightness`:__ The `brightness` valies is intended to dim the display output without
-fiddling with the `*.star` files. It just applies a multiplier to the output of `pixlet`.
-`value = 0` will blank out the display, and `value = 1` will leave the output of `pixlet`
-untouched. Technically values higher that 1 are allowed, but not recommended as the output will
-saturate very quickly. Tinker with the `brightness` value and see what works for you!
-
 #### `schema_vals`:
 `schema_vals` deserves its own section because it is a little complicated to set up.
 
-To support user configuration, the pixlet SDK has a concept of [`schema`]
-(https://github.com/tidbyt/pixlet/blob/main/docs/schema/schema.md). Basically, the applets
+To support user configuration, the pixlet SDK has a concept of
+[`schema`](https://github.com/tidbyt/pixlet/blob/main/docs/schema/schema.md). Basically, the applets
 are supposed to implement a `get_schema()` method which tells the TidByt&copy; stack what
 options to surface to the users and then supply back to the applet at render time.
 
@@ -262,6 +300,39 @@ like:
 }
 ```
 
+#### Brightness:
+
+The `brightness` option is intended to dim the display output without fiddling with the `*.star`
+files. It just applies a multiplier to the output of `pixlet`. `value = 0` will blank out the display, and `value = 1` will leave the output of `pixlet` untouched.
+
+There are two ways of configuring brightness, as toggled by setting the `source` field in the `config.json`.
+
+- `"source": "schedule"`: This allows the brigtness to be controlled on a fixed schedule. When
+  `source` is set to `"schedule"`, there should be an additional `schedule` field in the config.
+  See `brightness` > `schedule` field in the `config.json` schema above.
+
+  When using `schedule` the brightness value can technically be greater than 1, but the
+  display will saturate quite quickly. So feel free to experiment!
+
+- `"source": "api"`: This allows the brightness to be controlled via a simple REST API. When `source`
+  is set to `"api"`, a FastAPI server is started on port `8080`. The API is exposed at
+  `http://<server_ip>:8080/brightness`.
+
+  You can use any HTTP client to send a POST request with a JSON body containing the brightness
+  value. For example, here is a curl command that sets the brightness to 50% on a device accessible
+  at `tidbyt.local`:
+
+  ```shell
+  curl --request POST \
+       --url "http://tidbyt.local:8080/brightness" \
+       --header 'content-type: application/json' \
+       --data '{ "brightness": "0.5" }'
+  ```
+
+  The `brightness` value can be any number between 0 and 1 (both inclusive), where 1 is unchanged
+  pixlet output and 0 is off. Values greater than 1 is not supported in this setting.
+
+
 ### 5. [Optional] Extend Life Expectancy of the SD Card
 
 SD Cards have limited read/write cycles and are prone to corruption if the power goes out while
@@ -320,6 +391,24 @@ A quick and dirty guide to mounting and using a ramdisk with the script follows:
     in the ramdisk will be lost. How to automate mounting on boot is left as an exercise for the
     reader.
 
+## Putting it all together in a script
+
+Here is a quick script to automate the process of mounting the to ramdisk and running the script:
+```bash
+#!/bin/bash
+
+set -eou pipefail
+
+sudo mkdir -p /tmp/ramdisk
+sudo chmod 777 /tmp/ramdisk
+sudo mount -t tmpfs -o size=50m myramdisk /tmp/ramdisk
+
+cd /home/pi/projects/rpi-retro-display
+source env/bin/activate
+
+python_location="$(command -v python)"
+sudo -E "$python_location" main.py
+```
 
 
 ## License
